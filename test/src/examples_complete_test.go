@@ -290,4 +290,31 @@ func TestExamplesComplete(t *testing.T) {
 
 	assert.Exactly(t, label8nExpectedTags, label8nTags, "generated tags are different from expected")
 	assert.Exactly(t, label8nTags, label8nContextTags, "tags and context tags should be equal")
+
+	label9vIds := terraform.OutputMap(t, terraformOptions, "label9v_ids")
+	label9vExpectedIds := map[string]string{
+		"10": "clou-32ec8",
+		"15": "cloudposs-32ec8",
+	}
+	assert.Exactly(t, label9vExpectedIds, label9vIds, "label9v ids are different from expected")
+
+	label9cIds := terraform.OutputMap(t, terraformOptions, "label9c_ids")
+	label9cExpectedIds := map[string]string{
+		"10": "clou-32ec8",
+		"15": "cloudposs-32ec8",
+	}
+	assert.Exactly(t, label9cExpectedIds, label9cIds, "label9c ids are different from expected")
+
+	label9cvIds := terraform.OutputMap(t, terraformOptions, "label9cv_ids")
+	label9cvExpectedIds := map[string]string{
+		"10": "clou-32ec8",
+		"15": "cloudposs-32ec8",
+		"30": "cloudposse-uat-build-win-32ec8",
+		"50": "cloudposse-uat-build-winstonchurchroom",
+	}
+	assert.Exactly(t, label9cvExpectedIds, label9cvIds, "label9cv ids are different from expected")
+
+	label9oldcontextIds := terraform.OutputMap(t, terraformOptions, "label9cv_ids")
+	label9oldcontextExpectedIds := map[string]string{}
+	assert.Exactly(t, label9oldcontextExpectedIds, label9oldcontextIds, "label9oldcontext ids are different from expected")
 }

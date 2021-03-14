@@ -15,13 +15,15 @@ variable "context" {
     id_length_limit     = null
     label_key_case      = null
     label_value_case    = null
+    id_lengths          = []
   }
   description = <<-EOT
     Single object for setting entire context at once.
     See description of individual variables for details.
     Leave string and numeric variables as `null` to use default value.
     Individual variable settings (non-null) override settings in context object,
-    except for attributes, tags, and additional_tag_map, which are merged.
+    except for attributes, tags, additional_tag_map, and id_lengths, which are
+    merged.
   EOT
 
   validation {
@@ -32,6 +34,11 @@ variable "context" {
   validation {
     condition     = lookup(var.context, "label_value_case", null) == null ? true : contains(["lower", "title", "upper", "none"], var.context["label_value_case"])
     error_message = "Allowed values: `lower`, `title`, `upper`, `none`."
+  }
+
+  validation {
+    condition     = length([for i in var.context["id_lengths"] : i if i == null]) == 0
+    error_message = "You cannot specify null in context[\"id_lengths\"]."
   }
 }
 
@@ -153,5 +160,23 @@ variable "label_value_case" {
   validation {
     condition     = var.label_value_case == null ? true : contains(["lower", "title", "upper", "none"], var.label_value_case)
     error_message = "Allowed values: `lower`, `title`, `upper`, `none`."
+  }
+}
+
+variable "id_lengths" {
+  type        = list(number)
+  default     = []
+  description = <<-EOT
+    Create variants of `id` limited to these many characters.
+    By default, no variants are created.
+    The length-limited `id` variants are available as the `id_trunc` output map.
+    For example, variable `id_lengths = [8,16]` results in output `id_trunc` = {8 => "...", 16 => "..." }.
+    This functionality generally supersedes `id_length_limit`.
+  EOT
+
+  validation {
+    # As of tf0.13 you can't use contains() to check for null
+    condition     = length([for i in var.id_lengths : i if i == null]) == 0
+    error_message = "You cannot specify null in var.id_lengths."
   }
 }

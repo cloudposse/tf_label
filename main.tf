@@ -9,6 +9,7 @@ locals {
     id_hash_length      = 5
     label_key_case      = "title"
     label_value_case    = "lower"
+    id_lengths          = []
   }
 
   # So far, we have decided not to allow overriding replacement or id_hash_length
@@ -16,7 +17,7 @@ locals {
   id_hash_length = local.defaults.id_hash_length
 
   # The values provided by variables supersede the values inherited from the context object,
-  # except for tags and attributes which are merged.
+  # except for the following items which merge: tags, attributes, and id_lengths.
   input = {
     # It would be nice to use coalesce here, but we cannot, because it
     # is an error for all the arguments to coalesce to be empty.
@@ -36,6 +37,7 @@ locals {
     id_length_limit     = var.id_length_limit == null ? var.context.id_length_limit : var.id_length_limit
     label_key_case      = var.label_key_case == null ? lookup(var.context, "label_key_case", null) : var.label_key_case
     label_value_case    = var.label_value_case == null ? lookup(var.context, "label_value_case", null) : var.label_value_case
+    id_lengths          = distinct(concat(lookup(var.context, "id_lengths", []), var.id_lengths))
   }
 
 
@@ -72,6 +74,7 @@ locals {
   label_value_case = local.input.label_value_case == null ? local.defaults.label_value_case : local.input.label_value_case
 
   additional_tag_map = merge(var.context.additional_tag_map, var.additional_tag_map)
+  id_lengths         = local.input.id_lengths
 
   tags = merge(local.generated_tags, local.input.tags)
 
@@ -113,7 +116,8 @@ locals {
   # Create a truncated ID if needed
   delimiter_length = length(local.delimiter)
   # Calculate length of normal part of ID, leaving room for delimiter and hash
-  id_truncated_length_limit = local.id_length_limit - (local.id_hash_length + local.delimiter_length)
+  id_truncated_suffix_length = local.id_hash_length + local.delimiter_length
+  id_truncated_length_limit  = local.id_length_limit - local.id_truncated_suffix_length
   # Truncate the ID and ensure a single (not double) trailing delimiter
   id_truncated = local.id_truncated_length_limit <= 0 ? "" : "${trimsuffix(substr(local.id_full, 0, local.id_truncated_length_limit), local.delimiter)}${local.delimiter}"
   # Support usages that disallow numeric characters. Would prefer tr 0-9 q-z but Terraform does not support it.
@@ -124,6 +128,10 @@ locals {
   id_short = substr("${local.id_truncated}${local.id_hash}", 0, local.id_length_limit)
   id       = local.id_length_limit != 0 && length(local.id_full) > local.id_length_limit ? local.id_short : local.id_full
 
+  # Custom truncated lengths
+  ids_truncated_length_limit = { for length in local.id_lengths : length => length - local.id_truncated_suffix_length }
+  ids_truncated              = { for length in local.id_lengths : length => local.ids_truncated_length_limit[length] <= 0 ? "" : "${trimsuffix(substr(local.id_full, 0, local.ids_truncated_length_limit[length]), local.delimiter)}${local.delimiter}" }
+  ids                        = { for length in local.id_lengths : length => length(local.id_full) > length ? substr("${local.ids_truncated[length]}${local.id_hash}", 0, length) : local.id_full }
 
   # Context of this label to pass to other label modules
   output_context = {
@@ -141,6 +149,7 @@ locals {
     id_length_limit     = local.id_length_limit
     label_key_case      = local.label_key_case
     label_value_case    = local.label_value_case
+    id_lengths          = local.id_lengths
   }
 
 }

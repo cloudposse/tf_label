@@ -8,6 +8,14 @@ output "id_full" {
   description = "Disambiguated ID not restricted in length"
 }
 
+output "id_trunc" {
+  value       = { for length in local.id_lengths : length => local.ids[length] }
+  description = <<-EOT
+    Disambiguated ID restricted to character lengths specified by `id_lengths` variable.
+    For example, variable `id_lengths = [8,16]` results in output `id_trunc` = {8 => "...", 16 => "..." }.
+  EOT
+}
+
 output "enabled" {
   value       = local.enabled
   description = "True if module is enabled, false otherwise"
@@ -85,4 +93,3 @@ output "context" {
   Note: this version will have null values as defaults, not the values actually used as defaults.
 EOT
 }
-
